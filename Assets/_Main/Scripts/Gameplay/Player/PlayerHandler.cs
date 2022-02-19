@@ -1,3 +1,4 @@
+using System.Threading.Tasks;
 using UnityEngine;
 
 /// <summary>
@@ -7,6 +8,10 @@ public class PlayerHandler : MonoBehaviour
 {
     [SerializeField]
     private CharacterController characterController;
+
+    [Header("Reset Point")]
+    [SerializeField]
+    private Transform resetPoint; 
 
     [Header("Specs Player")]
     [SerializeField]
@@ -37,6 +42,8 @@ public class PlayerHandler : MonoBehaviour
     [HideInInspector]
     public Vector3 move = Vector3.zero;
 
+    private bool dead; 
+
     #region Unity Messages
 
     private void Update()
@@ -47,10 +54,12 @@ public class PlayerHandler : MonoBehaviour
         vMouse = Mathf.Clamp(vMouse, minRotation, maxRotation);
         cam.transform.eulerAngles = new Vector3(-vMouse, hMouse, 0);
 
-        move = new Vector3(Input.GetAxis("Horizontal"), 0.0f, Input.GetAxis("Vertical")); 
-
-        if(characterController.isGrounded && move.magnitude >= 0.1f)
+        if(characterController.isGrounded )
         {
+            move = new Vector3(Input.GetAxis("Horizontal"), 0.0f, Input.GetAxis("Vertical"));
+
+            if(move.magnitude < 0.01f)
+                return; 
 
             //function math Two-Parameter Arctangent to get angle and multiply it to convert randians to degrees, finally adds angles in Y of the camera
             float targetAngle = Mathf.Atan2(move.x, move.z) * Mathf.Rad2Deg + cam.transform.eulerAngles.y;
@@ -67,9 +76,26 @@ public class PlayerHandler : MonoBehaviour
                 move.y = jumpSpeed; 
         }
 
-        move .y -= gravity * Time.deltaTime;
+        move.y -= gravity * Time.deltaTime;
 
         characterController.Move(move * Time.deltaTime);
+    }
+
+    private void OnTriggerEnter(Collider other)
+    {
+        if(other.CompareTag("Death"))
+        {
+            ResetPosition().WrapErrors();
+        }
+    }
+
+    public async Task ResetPosition()
+    {
+        while(Vector3.Distance(resetPoint.position, transform.position) > 0.1f)
+        {
+            transform.position = resetPoint.position;
+            await Task.Yield();
+        }
     }
 
     #endregion
