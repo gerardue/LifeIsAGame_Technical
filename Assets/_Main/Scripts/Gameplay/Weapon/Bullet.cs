@@ -3,8 +3,12 @@ using System.Collections;
 using System.Collections.Generic;
 using UnityEngine;
 
+/// <summary>
+/// This class is responsible for the mechanic of bullet
+/// </summary>
 public class Bullet : MonoBehaviour
 {
+    [Header("Components")]
     [SerializeField]
     private Rigidbody rb;
     [SerializeField]
@@ -23,10 +27,6 @@ public class Bullet : MonoBehaviour
 
     #region Unity Messages
 
-    private void Awake()
-    {
-    }
-
     private void OnEnable()
     {
         onShot?.Invoke(this);
@@ -41,12 +41,6 @@ public class Bullet : MonoBehaviour
     {
         onTriggerEnter?.Invoke(other.gameObject, this);
     }
-
-    #endregion
-
-    #region Public Methods
-
-
 
     #endregion
 

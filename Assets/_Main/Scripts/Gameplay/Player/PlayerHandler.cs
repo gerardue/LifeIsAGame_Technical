@@ -6,8 +6,13 @@ using UnityEngine;
 /// </summary>
 public class PlayerHandler : MonoBehaviour
 {
+    [Header("Character Controller")]
     [SerializeField]
     private CharacterController characterController;
+
+    [Header("Player Dance")]
+    [SerializeField]
+    private PlayerDancing playerDance; 
 
     [Header("Reset Point")]
     [SerializeField]
@@ -42,9 +47,12 @@ public class PlayerHandler : MonoBehaviour
     [HideInInspector]
     public Vector3 move = Vector3.zero;
 
-    private bool dead; 
-
     #region Unity Messages
+
+    private void Awake()
+    {
+        playerDance.NameAnimation = ServiceLocator.Instance.GetService<SOGameData>().NameAnimation; 
+    }
 
     private void Update()
     {
@@ -89,23 +97,28 @@ public class PlayerHandler : MonoBehaviour
         }
     }
 
-    public async Task ResetPosition()
-    {
-        while(Vector3.Distance(resetPoint.position, transform.position) > 0.1f)
-        {
-            transform.position = resetPoint.position;
-            await Task.Yield();
-        }
-    }
-
     #endregion
 
     #region Public Methods
+
+
 
     #endregion
 
     #region Private Methods
 
+    public async Task ResetPosition()
+    {
+        try
+        {
+            while (Vector3.Distance(resetPoint.position, transform.position) > 0.1f)
+            {
+                transform.position = resetPoint.position;
+                await Task.Yield();
+            }
+        }
+        catch { }
+    }
 
     #endregion
 }

@@ -1,26 +1,17 @@
-using System;
-using System.Collections;
-using System.Collections.Generic;
 using System.Threading;
 using System.Threading.Tasks;
 using UnityEngine;
 
 /// <summary>
-/// This class is responsible for parabolic weapon
+/// This class is responsible for the behavior of the weapon parabolic
 /// </summary>
-public class WeaponParabolic : MonoBehaviour, IWeapon
+public class WeaponParabolic : Weapon, IWeapon
 {
-    [Header("Setup Weapon")]
-    [SerializeField]
-    private WeaponParabolicSetup weaponSetup;
-
-    [Header("Start position bullet")]
-    [SerializeField]
-    private Transform startPositionBullet;
-
     private Vector3 endPositionBullet;
 
     private CancellationTokenSource cts;
+
+    public GameObject WeaponObject { get => gameObject; }
 
     #region Unity Messages
 
@@ -34,10 +25,8 @@ public class WeaponParabolic : MonoBehaviour, IWeapon
 
     #region Public Methods
 
-    /// <summary>
-    /// Shot (From interface)
-    /// </summary>
-    [ContextMenu("Parabolic")]
+    #region IWeapon Interface
+
     public void Shot(Bullet bullet)
     {
         ShotAsync(bullet).WrapErrors();
@@ -60,41 +49,41 @@ public class WeaponParabolic : MonoBehaviour, IWeapon
 
     #endregion
 
+    #endregion
+
     #region Private Methods
 
-    /// <summary>
-    /// Shot bullet async
-    /// </summary>
     private async Task ShotAsync(Bullet bullet)
     {
         cts = new CancellationTokenSource();
 
         float t = 0;
-        float anim = 0; 
+        float anim = 0;
 
-        endPositionBullet = Camera.main.transform.position + (Camera.main.transform.forward * weaponSetup.WeaponParabolicStats.MaxDistance);
-    
-        while (t < weaponSetup.WeaponParabolicStats.TimeDuration - 0.01f && !cts.IsCancellationRequested)
+        try
         {
-            if(!bullet.gameObject.activeSelf)
+            endPositionBullet = Camera.main.transform.position + (transform.forward * weaponSetup.WeaponParabolicStats.MaxDistance);
+
+            while (t < weaponSetup.WeaponParabolicStats.TimeDuration - 0.01f && !cts.IsCancellationRequested)
             {
-                cts.Cancel();
-                return; 
+                if (!bullet.gameObject.activeSelf)
+                {
+                    cts.Cancel();
+                    return;
+                }
+
+                t += Time.deltaTime;
+                anim += Time.deltaTime;
+                anim %= weaponSetup.WeaponParabolicStats.TimeDuration;
+
+                bullet.transform.position = Parabolic(startPositionBullet.position, endPositionBullet, weaponSetup.WeaponParabolicStats.Height,
+                    anim / weaponSetup.WeaponParabolicStats.TimeDuration, weaponSetup.WeaponParabolicStats.ParabolicCurve);
+
+                await Task.Yield();
             }
-
-            t += Time.deltaTime;
-            anim += Time.deltaTime;
-            anim %= weaponSetup.WeaponParabolicStats.TimeDuration;
-
-            bullet.transform.position = Parabolic(startPositionBullet.position, endPositionBullet, weaponSetup.WeaponParabolicStats.Height, 
-                anim / weaponSetup.WeaponParabolicStats.TimeDuration, weaponSetup.WeaponParabolicStats.ParabolicCurve);
-
-            await Task.Yield();
+            bullet.OnMiss(bullet);
         }
-
-
-        if(t >= weaponSetup.WeaponParabolicStats.TimeDuration - 0.01)
-            bullet.OnMiss(bullet); 
+        catch { }
     }
 
     #region Parabolic Movement

@@ -6,6 +6,7 @@ TagManager:
   tags:
   - Orbit
   - Death
+  - Weapon
   layers:
   - Default
   - TransparentFX

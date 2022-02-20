@@ -1,5 +1,3 @@
-using System;
-using System.Collections;
 using System.Collections.Generic;
 using System.Threading;
 using System.Threading.Tasks;
@@ -10,12 +8,19 @@ using UnityEngine;
 /// </summary>
 public class WeaponController : MonoBehaviour
 {
-    public WeaponParabolic weaponParabolic;
-    public WeaponAttractionGravity weaponOrbit;
+    [Header("Default weapon")]
+    [SerializeField]
+    private Weapon defaultWeapon;
 
     [Header("Pool bullets")]
     [SerializeField]
     private List<Bullet> bullets = new List<Bullet>();
+
+    [Header("Position Weapon")]
+    [SerializeField]
+    private Transform parentWeapon;
+    [SerializeField]
+    private Transform posWeapon;
 
     private Queue<Bullet> bulletsToUse = new Queue<Bullet>();
 
@@ -24,15 +29,15 @@ public class WeaponController : MonoBehaviour
     //To Shot
     private float spawnTime = 0.5f;
     private float currentSpawnTime;
-    
+
     private CancellationTokenSource cts;
 
     #region Unity Messages
 
     private void Awake()
     {
-        bullets.ForEach(x => bulletsToUse.Enqueue(x)); 
-        currentWeapon = weaponOrbit.GetComponent<IWeapon>();
+        bullets.ForEach(x => bulletsToUse.Enqueue(x));
+        //currentWeapon = defaultWeapon.GetComponent<IWeapon>();
     }
 
     private void Update()
@@ -43,14 +48,14 @@ public class WeaponController : MonoBehaviour
             return;
         }
 
-        if(Input.GetMouseButtonDown(0))
+        if (Input.GetMouseButtonDown(0) && currentWeapon != null)
         {
             currentSpawnTime = spawnTime;
 
             Bullet bullet = bulletsToUse.Dequeue();
-            bullet.OnShot = Shot; 
+            bullet.OnShot = Shot;
             bullet.OnHit = Hit;
-            bullet.OnMiss = Miss; 
+            bullet.OnMiss = Miss;
             bullet.TriggerEnter = TriggerEnter;
             bullet.gameObject.SetActive(true);
         }
@@ -58,10 +63,10 @@ public class WeaponController : MonoBehaviour
 
     private void OnTriggerEnter(Collider other)
     {
-        if(other.CompareTag("Weapon"))
+        if (other.CompareTag("Weapon"))
         {
             cts = new CancellationTokenSource();
-            GetWeapon(other.GetComponent<IWeapon>()).WrapErrors(); 
+            GetWeapon(other).WrapErrors();
         }
     }
 
@@ -77,7 +82,7 @@ public class WeaponController : MonoBehaviour
 
     #region Public Methods
 
-    
+
 
     #endregion
 
@@ -108,16 +113,47 @@ public class WeaponController : MonoBehaviour
     /// <summary>
     /// Get new weapon or change weapon
     /// </summary>
-    private async Task GetWeapon(IWeapon weapon)
+    private async Task GetWeapon(Collider other)
     {
-        while(!cts.IsCancellationRequested)
+        while (!cts.IsCancellationRequested)
         {
-            if(Input.GetKey(KeyCode.Space))
+            if (Input.GetKey(KeyCode.E))
             {
-                currentWeapon = weapon;
+                if (currentWeapon != null)
+                {
+                    AnimationDropWeapon(currentWeapon.WeaponObject);
+                }
+
+                currentWeapon = other.GetComponent<IWeapon>();
+                AnimationGetWeapon(other.gameObject);
+                cts.Cancel();
             }
             await Task.Yield();
         }
+    }
+
+    /// <summary>
+    /// Animation when pick up a weapon
+    /// </summary>
+    private void AnimationGetWeapon(GameObject weapon)
+    {
+        weapon.transform.SetParent(parentWeapon);
+        List<ICommand> commands = new List<ICommand>()
+        {
+            new Move(weapon, posWeapon.localPosition, 0.5f, isLocal: true),
+            new Rotate(weapon, posWeapon.localEulerAngles, 0.5f, isLocal: true)
+        };
+
+        CommandQueue.Instance.ExecuteCommands(commands);
+    }
+
+    private void AnimationDropWeapon(GameObject weapon)
+    {
+        weapon.transform.SetParent(null); 
+        Vector3 newPos = weapon.transform.localPosition + (Vector3.down * 1.12f);
+
+        ICommand command = new Move(weapon, newPos, 0.5f);
+        CommandQueue.Instance.ExecuteCommand(command); 
     }
 
     #endregion

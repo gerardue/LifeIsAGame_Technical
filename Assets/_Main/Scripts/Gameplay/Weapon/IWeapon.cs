@@ -11,6 +11,6 @@ public interface IWeapon
     void Shot(Bullet bullet);
     void Hit(Bullet bullet);
     void Miss(Bullet bullet);
-    void OnTriggerEnterFunction(GameObject element, Bullet buller); 
-    //void OnHit(Action<GameObject> onHit); 
+    void OnTriggerEnterFunction(GameObject element, Bullet buller);
+    GameObject WeaponObject { get; }
 }
